@@ -56,7 +56,7 @@ async function refresh() {
   if (page==='evidence') bindEvidence(api, refresh, fail);
   if (page==='runs') {
     document.getElementById('refresh').addEventListener('click', refresh);
-    if (state.runs.some(row=>['queued','running'].includes(row.status))) timer=setTimeout(refresh,1000);
+    if (state.runs.some(row=>['queued','waiting','running'].includes(row.status))) timer=setTimeout(refresh,1000);
   }
 }
 window.addEventListener('hashchange', refresh);

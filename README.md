@@ -20,6 +20,7 @@ docker compose up -d --build --wait
 - FastAPI 文档 `http://127.0.0.1:19304/docs`
 - PostgreSQL 16 端口 `127.0.0.1:17804`，账号 `app`，演示库 `workflow`
 - `docker compose exec -T backend python -m scripts.seed_demo` 手动重跑演示数据
+- `docker compose exec -T backend python -m unittest discover -s tests -t .` 运行调度单元测试
 - `docker compose logs -f backend worker` 查看运行情况
 - `docker compose down` 停容器并保留演示卷
 
@@ -35,6 +36,16 @@ docker compose up -d --build --wait
 
 `SEED_DEMO=true` 启动时生成账号与一个业务样例。工作台新建档案会预填样例。可编辑表单中的数值、文本和结构化 JSON 后提交。业务说明中的原始文件是上游示例，演示数据通过表单录入。角色枚举位于后端 `src/constants/workflow.py` 与前端 `src/constants/workflow.js`。执行状态枚举也位于这两个文件，使用于队列、列表和执行详情。证据校验码是报告 JSON 按 UTF-8、键排序且省略多余空格序列化后的 SHA-256。
 
+## 并发调度
+
+`WORKER_SLOTS` 个执行槽并发领取批次，但同一月份同一时刻只由一个批次动库。
+
+- 批次涉及月份取自分区计划与凭条入园日；整批要么拿到全部月份，要么一张都不占。
+- 撞月的后到批次进入「等待月份」，页面列出它在等哪些月份；不撞月的批次可绕过等待项并行执行。
+- 撞月的后到批次不能插到与它撞月的先到批次前面（逐月 FIFO）；等待批次仍为后续撞月批次保留位置。
+- 执行中断后，租约过期的批次可被下一班次收回原队列位置；收回前先确认旧执行已释放其执行锁。旧执行迟到的结果因尝试令牌不匹配不会写入证据。
+- 执行详情可看到本批涉及月份、正在等待的月份；完成后可跳转到本批证据。
+
 ## 工程结构
 
 | 服务 | 实现 |
@@ -47,6 +58,6 @@ docker compose up -d --build --wait
 
 编辑 `backend/src/services/domain.py` 可修改试算方法与业务表单说明。API 路由、数据定义和页面位于 `backend/src/routes/`、`backend/src/models/` 与 `frontend/src/pages/`。开发时更新源文件后重新构建对应服务。
 
-`.env.example` 提供 `FRONTEND_PORT`、`BACKEND_PORT`、`DB_PORT`、`DB_PASSWORD`、`AUTH_KEY` 、`SEED_DEMO` 与 `NETWORK_SUBNET`。修改 `NETWORK_SUBNET` 可避开本机现有容器网段。所有发布的端口绑定本机回环地址。接入独立部署前需配置自己的凭据并按业务范围做独立验收。
+`.env.example` 提供 `FRONTEND_PORT`、`BACKEND_PORT`、`DB_PORT`、`DB_PASSWORD`、`AUTH_KEY` 、`SEED_DEMO`、`WORKER_SLOTS` 与 `NETWORK_SUBNET`。修改 `NETWORK_SUBNET` 可避开本机现有容器网段。所有发布的端口绑定本机回环地址。接入独立部署前需配置自己的凭据并按业务范围做独立验收。
 
 [MIT License](LICENSE)

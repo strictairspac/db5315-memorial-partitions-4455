@@ -116,6 +116,19 @@ def validate(payload):
     _parse(payload)
 
 
+def months(payload):
+    """Return the calendar months a batch touches, sorted as ``YYYY-MM`` labels.
+
+    A batch scopes months by its partition plan together with the entry month of
+    every slip, because a late slip can fall outside any planned partition and
+    still need ``DEFAULT`` handling.
+    """
+    _, partition_months, slips = _parse(payload)
+    labels = {month.label for month in partition_months}
+    labels.update(entered_on.isoformat()[:7] for entered_on in slips.values())
+    return sorted(labels)
+
+
 def _read_slips(conn, tables):
     observed = {}
     for table in tables:

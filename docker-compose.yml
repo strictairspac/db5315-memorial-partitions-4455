@@ -11,6 +11,7 @@ x-python: &python
     AUTH_KEY: ${AUTH_KEY:-dev-example-key-local-5300-change-me}
     SEED_DEMO: ${SEED_DEMO:-true}
     REDIS_URL: redis://redis:6379/0
+    WORKER_SLOTS: ${WORKER_SLOTS:-4}
   volumes: [artifacts:/work]
 services:
   frontend:

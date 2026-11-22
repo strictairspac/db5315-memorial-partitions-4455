@@ -9,6 +9,7 @@ class Role(StrEnum):
 
 class Status(StrEnum):
     QUEUED = 'queued'
+    WAITING = 'waiting'
     RUNNING = 'running'
     COMPLETE = 'complete'
     FAILED = 'failed'
